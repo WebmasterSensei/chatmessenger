@@ -23,6 +23,7 @@ class OnlineUsers
         return [
             'id' => $user->id,
             'name' => $user->name,
+            'isOnline' => true,
         ];
     }
 

@@ -22,6 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/get-users', [MessengerController::class, 'getUsers'])->name('get.users');
     Route::get('/get-message', [MessengerController::class, 'getMessage'])->name('get.message');
     Route::post('/send-message', [MessengerController::class, 'sendMessage'])->name('send.message');
+    Route::get('/search-users', [MessengerController::class, 'searchUser'])->name('search.users');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

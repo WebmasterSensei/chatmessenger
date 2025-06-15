@@ -17,29 +17,38 @@ class MessengerController extends Controller
 
     public function getUsers(Request $request)
     {
-        $users = User::all(); // get all users
-        $onlineCollected = collect($request->data);
+        $users = User::all();
 
-        $users->transform(function ($user) use ($onlineCollected, $request) {
-
-            $mess = Message::where(function ($query) use ($request, $user) {
+        $users = $users->map(function ($user) use ($request) {
+            $lastMessage = Message::where(function ($query) use ($request, $user) {
                 $query->where('sender_id', $request->user()->id)
                     ->where('recipient', $user->id);
             })->orWhere(function ($query) use ($request, $user) {
                 $query->where('sender_id', $user->id)
                     ->where('recipient', $request->user()->id);
-            })->orderByDesc('id')->first();
+            })
+                ->orderByDesc('id')
+                ->first();
 
-            $isOnline = $onlineCollected->where('id', $user->id)->isNotEmpty();
-            $user->lastMessage =  $mess->message ?? '';
-            $user->online = $isOnline;
+            $user->countMess = Message::where('sender_id', $user->id)
+                ->where('recipient', $request->user()->id)
+                ->where('seen', 0)
+                ->count();
+
+            $user->lastMessage = $lastMessage->message ?? '';
+            $user->lastMessageTime = $lastMessage->created_at ?? null;
+
             return $user;
         });
+
+        // Sort users by the timestamp of their last message, latest first
+        $users = $users->sortByDesc('lastMessageTime')->values();
 
         return response()->json([
             'data' => $users,
         ]);
     }
+
 
     public function getMessage(Request $request)
     {
@@ -53,7 +62,11 @@ class MessengerController extends Controller
             'status' => 1,
         ]);
 
-        $user = User::select('id', 'name', 'email')->where('id', $request->id)->first();
+        $user = User::select('id', 'name', 'email', 'gender')->where('id', $request->id)->first();
+
+        if ($user) {
+            $user->isOnline = $request->online;
+        }
 
         $result = Message::where(function ($query) use ($request) {
             $query->where('sender_id', $request->user()->id)
@@ -83,11 +96,17 @@ class MessengerController extends Controller
     }
     public function sendMessage(Request $request)
     {
+        $path = '';
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+
+            $path = $file->store('uploads', 'public');
+        }
         $sent = Message::create([
             'recipient' => $request->id,
             'sender_id' => $request->user()->id,
-            'message' => $request->message,
-            'attachment' => '',
+            'message' => !$path ? $request->message : 'sent a photo',
+            'attachment' => $path,
             'seen' => 0,
             'status' => 0,
         ]);
@@ -99,5 +118,11 @@ class MessengerController extends Controller
         return response()->json([
             'data' => $sent,
         ]);
+    }
+
+    public function searchUser(Request $request)
+    {
+        $user = User::whereAny(['name', 'email'], 'like', '%' . $request->search . '%')->get();
+        return response()->json(['data' => $user]);
     }
 }

@@ -25,7 +25,9 @@
     "dependencies": {
         "@inertiajs/inertia": "^0.11.1",
         "@inertiajs/inertia-vue3": "^0.6.0",
+        "ant-design-vue": "4.x",
         "dayjs": "^1.11.13",
-        "pinia": "^3.0.2"
+        "pinia": "^3.0.2",
+        "v-emoji-picker": "^2.3.3"
     }
 }

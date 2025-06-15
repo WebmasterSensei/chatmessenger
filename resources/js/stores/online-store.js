@@ -16,7 +16,7 @@ export const useOnlineUsersStore = defineStore('onlineUsers', {
         },
         removeOnlineUser(user) {
             this.onlineUsers = this.onlineUsers.filter(
-                (onlineUser) => onlineUser.id !== user.id
+                (onlineUser) => onlineUser.id !== user.say
             );
         },
     },

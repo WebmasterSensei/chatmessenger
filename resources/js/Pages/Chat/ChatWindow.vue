@@ -1,6 +1,6 @@
 <script setup>
-import { usePage } from "@inertiajs/vue3";
-import { ref, computed, onMounted, watch, nextTick } from "vue";
+import { usePage, router } from "@inertiajs/vue3";
+import { ref, computed, onMounted, watch, nextTick, onBeforeUnmount } from "vue";
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import axios from "axios";
@@ -19,7 +19,7 @@ const typingIndicator = ref(false);
 const getMessage = async () => {
     const { data } = await axios.get(route('get.message'), {
         params: {
-            id: props.chat?.id
+            id: props.chat?.id,
         }
     });
     messages.value = data;
@@ -42,6 +42,8 @@ const sendTyping = () => {
     }, 1000);
 };
 
+const emit = defineEmits(['fetch-users']);
+
 const setupEcho = () => {
     window.Echo.private(`message.${page.auth.user.id}`)
         .listen(".message-event", (e) => {
@@ -51,9 +53,11 @@ const setupEcho = () => {
 
             if (messageIndex === -1) {
                 props?.chat?.data?.push(e.message);
+                emit('fetch-users')
 
             } else if (props.chat && props.chat.data) {
                 props.chat.data[messageIndex] = e.message;
+                emit('fetch-users')
 
             }
 
@@ -90,25 +94,46 @@ watch(() => props.chat?.data, async () => {
     deep: true
 });
 
+
+const fileList = ref([]);
+
+const handleChangeFile = () => {
+    sendMessage();
+}
+
+
+
 const newMessage = ref('')
 
 const sendMessage = async () => {
     try {
-        if (!newMessage.value.trim()) return; // Don't send empty messages
+        if (!newMessage.value.trim() && fileList.value.length === 0) return;
+        const formData = new FormData();
+        formData.append('id', props.chat?.user?.id);
+        formData.append('message', newMessage.value);
+        if (fileList.value.length > 0) {
+            formData.append('file', fileList.value[0].originFileObj || fileList.value[0]);
+        }
 
-        const { data } = await axios.post(route('send.message'), {
-            id: props.chat?.user?.id,
-            message: newMessage.value.trim()
+        const { data } = await axios.post(route('send.message'), formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
         });
         props.chat.data.push(data.data);
-        // Clear the input after sending
+        emit('fetch-users')
+
         newMessage.value = '';
+        fileList.value = [];
         sent.value = true;
     } catch (error) {
         console.error('Failed to send message:', error);
-        // You might want to show an error message to the user here
     }
 };
+
+const profile = () => {
+    router.get(route('profile'))
+}
 </script>
 
 <template>
@@ -116,63 +141,123 @@ const sendMessage = async () => {
         <!-- Chat header -->
         <div class="p-4 border-b border-gray-300 flex items-center justify-between bg-white">
             <div class="flex">
-                <img :src="chat?.user?.avatar ? chat?.user?.avatar : '/storage/default/avatar.png'"
-                    class="w-10 h-10 rounded-full mr-3">
+                <!-- {{ chat?.user?.isOnline }} -->
+                <img :src="chat.avatar ? chat.avatar : '/storage/default/avatar.png'"
+                    class="w-10 h-10 rounded-full mr-3 object-cover border-2 border-white group-hover:border-gray-50 shadow"
+                    :class="{ 'border-green-500': chat?.user?.isOnline == 'true' }">
                 <div>
                     <h2 class="font-semibold">{{ chat?.user?.name }}</h2>
-                    <p class="text-xs text-gray-500">Online</p>
+                    <p class="text-xs text-gray-500">{{ chat?.user?.isOnline == 'true' ? 'Online' : 'Offline' }}</p>
                 </div>
             </div>
             <div class="flex">
-                <img src="/storage/iconssvg/settings.svg" class="w-10 h-10 rounded-full mr-3 cursor-pointer">
+                <!-- <div @click="profile">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                        <path fill="currentColor"
+                            d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66z" />
+                    </svg>
+                </div> -->
+                <!-- <img src="/storage/iconssvg/settings.svg" class="w-10 h-10 rounded-full mr-3 cursor-pointer"> -->
             </div>
         </div>
 
+
         <!-- Messages -->
         <div ref="chatContainer" class="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-200 scrollbar-hidden">
+            <div class="">
+                <div class="max-w-xs mx-auto overflow-hidden text-center p-6">
+                    <!-- Avatar in the center -->
+                    <div class="relative mx-auto w-24 h-24 mb-4">
+
+                        <img v-if="chat.user.image"
+                            class="w-full h-full rounded-full object-cover border-4 border-blue-100"
+                            :src="chat.user.image ? chat.user.image : ''" alt="Profile picture">
+                        <img v-else" class="w-full h-full rounded-full object-cover border-4 border-blue-100"
+                            :src="chat?.user?.gender == 'Male' ? '/storage/default/boy.jpg' : '/storage/default/girl.jpg'"
+                            alt="Profile picture">
+
+                        <span :class="chat?.user?.isOnline == 'true' ? 'bg-green-500' : 'bg-gray-400'"
+                            class="absolute bottom-0 right-0 w-5 h-5  rounded-full border-2 border-white"></span>
+                    </div>
+
+                    <!-- Name and email -->
+                    <div class="mb-1">
+                        <h2 class="text-xl font-semibold text-gray-800">{{ chat.user.name }}</h2>
+                        <p class="text-sm text-gray-500">{{ chat.user.email }}</p>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="flex items-center justify-center space-x-1 mt-2">
+                        <span class="w-2 h-2  rounded-full"
+                            :class="chat?.user?.isOnline == 'true' ? 'bg-green-500' : 'bg-gray-400'"></span>
+                        <span class="text-xs text-gray-500">{{ chat?.user?.isOnline == 'true' ? 'Online' : 'Offline'
+                            }}</span>
+                    </div>
+
+                    <!-- Optional action buttons -->
+
+                </div>
+
+                <div class="mt-4 mb-2">
+                    <div class="flex items-center text-gray-500">
+                        <div class="flex-grow border-t border-gray-300"></div>
+                        <span class="px-4 text-sm">write a message</span>
+                        <div class="flex-grow border-t border-gray-300"></div>
+                    </div>
+
+                </div>
+
+            </div>
             <div v-for="message in chat?.data" :key="message.id"
-                :class="{ 'justify-end': message.recipient === chat?.user?.id, 'justify-start': message.sender_id === page?.auth?.user.id }"
+                :class="{ 'justify-end': message.sender_id === page?.auth?.user.id, 'justify-start': message.sender_id !== page?.auth?.user.id }"
                 class="flex mb-4 gap-2">
 
                 <!-- Avatar (only shown for received messages) -->
-                <div v-if="message.sender_id === chat?.user?.id" class="flex-shrink-0">
+                <div v-if="message.sender_id !== page?.auth?.user.id" class="flex-shrink-0">
                     <img :src="message.avatar || '/storage/default/avatar.png'"
                         class="w-8 h-8 rounded-full object-cover mt-1" :alt="message.senderName">
                 </div>
 
                 <!-- Message bubble -->
                 <div class="flex flex-col"
-                    :class="{ 'items-end': message.recipient === chat?.user?.id, 'justify-start': message.sender_id === page?.auth?.user.id }">
+                    :class="{ 'items-end': message.sender_id === page?.auth?.user.id, 'items-start': message.sender_id !== page?.auth?.user.id }">
                     <!-- Sender name (only for received messages) -->
-                    <span v-if="message.sender_id === chat?.user?.id"
+                    <span v-if="message.sender_id !== page?.auth?.user.id"
                         class="text-xs text-gray-500 dark:text-gray-400 mb-1 ml-1">
                         {{ chat.user.name }}
                     </span>
+                    <!-- {{ message.attachment }} -->
 
-                    <div class="flex gap-2">
+                    <div class="flex gap-2" v-if="message.attachment != null && message.attachment != ''">
                         <!-- Message bubble -->
+                        <div :class="{
+
+                        }" class="py-2 px-4 max-w-xs md:max-w-md lg:max-w-lg">
+                            <a-image style="height: 200px; width: 100%;" :src="'/storage/' + message.attachment"
+                                class="rounded-lg w-20 h-20"></a-image>
+                        </div>
+
+                    </div>
+                    <div class="flex gap-2" v-else>
                         <div :class="{
                             'bg-blue-500 text-white rounded-[25px]': message.sender_id === page?.auth?.user.id,
                             'bg-white dark:bg-gray-100 rounded-[25px]': message.sender_id !== page?.auth?.user.id
                         }" class="rounded-lg py-2 px-4 max-w-xs md:max-w-md lg:max-w-lg shadow">
-                            <p class="break-words text-sm">{{ message.message }}</p>
-
+                            <p class="break-words text-sm">{{ message.attachment != null && message.attachment != '' ?
+                                '' : message.message }}</p>
                         </div>
-
-
-
-
-                        <!-- Seen status (only for sent messages) -->
-
-
                     </div>
+
+                    <!-- Timestamp -->
                     <span class="text-[11px]" :class="{
                         'text-gray-400 mr-4': message.sender_id === page?.auth?.user.id,
                         'text-gray-500 dark:text-gray-400 ml-2': message.sender_id !== page?.auth?.user.id,
                     }">
                         {{ dayjs(message.created_at).fromNow() }}
                     </span>
-                    <div v-if="message.sender_id === page.auth.user.id"
+
+                    <!-- Read receipt (only for sent messages) -->
+                    <div v-if="message.sender_id === page?.auth?.user.id"
                         class="text-xs text-gray-400 dark:text-gray-500 -mt-3">
                         <svg v-if="message.sent === 1 || message.isSeen === 0" xmlns="http://www.w3.org/2000/svg"
                             class="h-3 w-3 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
@@ -181,13 +266,11 @@ const sendMessage = async () => {
                                 clip-rule="evenodd" />
                         </svg>
                         <div v-else-if="message.isSeen === 1">
-                            <img :src="message.avatar || 'data:image/png;base64,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'"
-                                alt="Avatar" class="h-2 w-3 rounded-full object-cover" />
+                            <img :src="message.avatar || 'data:image/png;base64,...'" alt="Avatar"
+                                class="h-2 w-3 rounded-full object-cover" />
                         </div>
-
                     </div>
                 </div>
-
             </div>
 
         </div>
@@ -207,17 +290,32 @@ const sendMessage = async () => {
                 </div>
             </div>
             <div class="flex">
+
+                <a-upload v-model:file-list="fileList" name="file" :show-upload-list="false"
+                    :before-upload="() => false" @change="handleChangeFile">
+                    <a-button size="large">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16.24 7.76L9.88 14.12a3 3 0 104.24 4.24l6.36-6.36a5 5 0 10-7.07-7.07l-7.07 7.07" />
+                        </svg>
+                    </a-button>
+                </a-upload>
+
                 <input v-model="newMessage" @input="sendTyping" @keyup.enter="sendMessage" type="text"
                     placeholder="Type a message..."
-                    class="flex-1 border border-gray-300 rounded-l-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button @click="sendMessage"
-                    class="bg-blue-500 text-white px-4 rounded-r-lg hover:bg-blue-600 focus:outline-none">
-                    Send
+                    class="flex-1 border border-gray-300 rounded-l-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    ref="messageInput" />
+                <button @click="sendMessage" class="border border-gray-400 text-black px-4 rounded-r-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
                 </button>
             </div>
         </div>
     </div>
-
     <div v-else class="h-full flex items-center justify-center bg-gray-50">
         <div class="text-center">
             <h2 class="text-xl font-semibold text-gray-600 mb-2">Select a chat to start messaging</h2>

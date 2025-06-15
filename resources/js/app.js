@@ -7,6 +7,7 @@ import { createApp, h } from "vue";
 import { ZiggyVue } from "../../vendor/tightenco/ziggy";
 import ws from "./echo";
 import { createPinia } from "pinia";
+import antdv from "ant-design-vue";
 
 const appName = import.meta.env.VITE_APP_NAME || "Laravel";
 
@@ -24,6 +25,7 @@ createInertiaApp({
         app.use(createPinia());
         app.config.globalProperties.$ws = ws;
         app.mount(el);
+        app.use(antdv);
     },
     progress: {
         color: "#4B5563",
