@@ -5,7 +5,7 @@
           bg-slate-50 flex flex-col items-center justify-center gap-2 text-center rounded overflow-hidden">
         <div
             class="w-28 h-28 bg-blue-700 mt-8 rounded-full border-4 border-slate-50 z-10 group-hover:scale-150 group-hover:-translate-x-24  group-hover:-translate-y-20 transition-all duration-500">
-            <img v-if="chat.user.image" class="w-28 h-28 rounded-full" :src="chat.user.image" alt="">
+            <img v-if="chat.user.image" class="w-28 h-28 rounded-full" :src="'storage/'+chat.user.image" alt="">
             <img v-else class="w-28 h-28 rounded-full"
                 :src="chat?.user?.gender == 'Male' ? '/storage/default/boy.jpg' : '/storage/default/girl.jpg'" alt="">
         </div>

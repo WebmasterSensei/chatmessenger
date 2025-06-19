@@ -141,8 +141,11 @@ const profile = () => {
         <!-- Chat header -->
         <div class="p-4 border-b border-gray-300 flex items-center justify-between bg-white">
             <div class="flex">
-                <!-- {{ chat?.user?.isOnline }} -->
-                <img :src="chat.avatar ? chat.avatar : '/storage/default/avatar.png'"
+                <img v-if="chat.user.image != null && chat?.user.image != ''" :src="'storage/' + chat.user.image"
+                    class="w-10 h-10 rounded-full mr-3 object-cover border-2 border-white group-hover:border-gray-50 shadow"
+                    :class="{ 'border-green-500': chat?.user?.isOnline == 'true' }">
+                <img v-else
+                    :src="chat?.user?.gender == 'Male' ? '/storage/default/boy.jpg' : '/storage/default/girl.jpg'"
                     class="w-10 h-10 rounded-full mr-3 object-cover border-2 border-white group-hover:border-gray-50 shadow"
                     :class="{ 'border-green-500': chat?.user?.isOnline == 'true' }">
                 <div>
@@ -168,11 +171,10 @@ const profile = () => {
                 <div class="max-w-xs mx-auto overflow-hidden text-center p-6">
                     <!-- Avatar in the center -->
                     <div class="relative mx-auto w-24 h-24 mb-4">
-
-                        <img v-if="chat.user.image"
+                        <img v-if="chat.user.image != null && chat?.user.image != ''"
                             class="w-full h-full rounded-full object-cover border-4 border-blue-100"
-                            :src="chat.user.image ? chat.user.image : ''" alt="Profile picture">
-                        <img v-else" class="w-full h-full rounded-full object-cover border-4 border-blue-100"
+                            :src="'storage/' + chat.user.image" alt="Profile picture">
+                        <img v-else class="w-full h-full rounded-full object-cover border-4 border-blue-100"
                             :src="chat?.user?.gender == 'Male' ? '/storage/default/boy.jpg' : '/storage/default/girl.jpg'"
                             alt="Profile picture">
 
@@ -191,7 +193,7 @@ const profile = () => {
                         <span class="w-2 h-2  rounded-full"
                             :class="chat?.user?.isOnline == 'true' ? 'bg-green-500' : 'bg-gray-400'"></span>
                         <span class="text-xs text-gray-500">{{ chat?.user?.isOnline == 'true' ? 'Online' : 'Offline'
-                            }}</span>
+                        }}</span>
                     </div>
 
                     <!-- Optional action buttons -->

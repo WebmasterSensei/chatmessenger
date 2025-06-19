@@ -6,6 +6,7 @@ use App\Events\ChatEvent;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MessengerController extends Controller
 {
@@ -62,7 +63,7 @@ class MessengerController extends Controller
             'status' => 1,
         ]);
 
-        $user = User::select('id', 'name', 'email', 'gender')->where('id', $request->id)->first();
+        $user = User::select('id', 'name', 'email', 'gender', 'image')->where('id', $request->id)->first();
 
         if ($user) {
             $user->isOnline = $request->online;
@@ -124,5 +125,16 @@ class MessengerController extends Controller
     {
         $user = User::whereAny(['name', 'email'], 'like', '%' . $request->search . '%')->get();
         return response()->json(['data' => $user]);
+    }
+
+    public function uploadImage(Request $request)
+    {
+        if ($request->hasFile('file')) {
+            $path = $request->file('file')->store('avatars', 'public');
+            User::where('id', $request->id)->update([
+                'image' => $path
+            ]);
+        }
+        return redirect()->back();
     }
 }

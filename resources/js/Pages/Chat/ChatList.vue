@@ -110,6 +110,10 @@ watch(
     { deep: true }
 )
 
+const logout = () => {
+    router.post(route('logout'));
+};
+
 </script>
 
 <template>
@@ -131,6 +135,15 @@ watch(
                         <path fill="currentColor"
                             d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66z" />
                     </svg>
+                </button>
+                <button @click="logout"
+                    class="p-2 rounded-full text-gray-500 hover:bg-gray-100/50 transition-all active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+                    </svg>
+
                 </button>
             </div>
         </div>
@@ -154,7 +167,7 @@ watch(
 
                 <!-- Avatar with online indicator -->
                 <div class="relative mr-3">
-                    <img v-if="user?.image" :src="user.image" class="w-10 h-10 rounded-full object-cover"
+                    <img v-if="user?.image" :src="'storage/' + user.image" class="w-10 h-10 rounded-full object-cover"
                         :class="{ 'ring-2 ring-green-500': user.online }">
                     <img v-else :src="user?.gender == 'Male' ? '/storage/default/boy.jpg' : '/storage/default/girl.jpg'"
                         class="w-10 h-10 rounded-full object-cover" :class="{ 'ring-2 ring-green-500': user.online }">
