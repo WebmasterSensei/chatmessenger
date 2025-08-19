@@ -193,7 +193,7 @@ const profile = () => {
                         <span class="w-2 h-2  rounded-full"
                             :class="chat?.user?.isOnline == 'true' ? 'bg-green-500' : 'bg-gray-400'"></span>
                         <span class="text-xs text-gray-500">{{ chat?.user?.isOnline == 'true' ? 'Online' : 'Offline'
-                        }}</span>
+                            }}</span>
                     </div>
 
                     <!-- Optional action buttons -->
@@ -213,10 +213,12 @@ const profile = () => {
             <div v-for="message in chat?.data" :key="message.id"
                 :class="{ 'justify-end': message.sender_id === page?.auth?.user.id, 'justify-start': message.sender_id !== page?.auth?.user.id }"
                 class="flex mb-4 gap-2">
-
                 <!-- Avatar (only shown for received messages) -->
                 <div v-if="message.sender_id !== page?.auth?.user.id" class="flex-shrink-0">
-                    <img :src="message.avatar || '/storage/default/avatar.png'"
+                    <img v-if="message.avatar" :src="'/storage/' + message.avatar"
+                        class="w-8 h-8 rounded-full object-cover mt-1" :alt="message.senderName">
+                    <img v-else
+                        :src="page.auth.user.gender == 'Male' ? '/storage/default/boy.jpg' : '/storage/default/girl.jpg'"
                         class="w-8 h-8 rounded-full object-cover mt-1" :alt="message.senderName">
                 </div>
 
@@ -251,25 +253,31 @@ const profile = () => {
                     </div>
 
                     <!-- Timestamp -->
-                    <span class="text-[11px]" :class="{
-                        'text-gray-400 mr-4': message.sender_id === page?.auth?.user.id,
-                        'text-gray-500 dark:text-gray-400 ml-2': message.sender_id !== page?.auth?.user.id,
+                    <div class="flex items-end gap-1" :class="{
+                        'justify-end': message.sender_id === page?.auth?.user.id,
+                        'justify-start': message.sender_id !== page?.auth?.user.id
                     }">
-                        {{ dayjs(message.created_at).fromNow() }}
-                    </span>
+                        <!-- Timestamp -->
+                        <span class="text-[11px]" :class="{
+                            'text-gray-400': message.sender_id === page?.auth?.user.id,
+                            'text-gray-500 dark:text-gray-400': message.sender_id !== page?.auth?.user.id,
+                        }">
+                            {{ dayjs(message.created_at).fromNow() }}
+                        </span>
 
-                    <!-- Read receipt (only for sent messages) -->
-                    <div v-if="message.sender_id === page?.auth?.user.id"
-                        class="text-xs text-gray-400 dark:text-gray-500 -mt-3">
-                        <svg v-if="message.sent === 1 || message.isSeen === 0" xmlns="http://www.w3.org/2000/svg"
-                            class="h-3 w-3 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                clip-rule="evenodd" />
-                        </svg>
-                        <div v-else-if="message.isSeen === 1">
-                            <img :src="message.avatar || 'data:image/png;base64,...'" alt="Avatar"
-                                class="h-2 w-3 rounded-full object-cover" />
+                        <!-- Read receipt (only for sent messages) -->
+                        <div v-if="message.sender_id === page?.auth?.user.id" class="flex items-center">
+                            <svg v-if="message.sent === 1 || message.isSeen === 0" xmlns="http://www.w3.org/2000/svg"
+                                class="h-3 w-3 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clip-rule="evenodd" />
+                            </svg>
+
+                            <span v-else-if="message.isSeen === 1"
+                                class="text-[11px] text-gray-400 dark:text-gray-500 ml-1">
+                                seen
+                            </span>
                         </div>
                     </div>
                 </div>

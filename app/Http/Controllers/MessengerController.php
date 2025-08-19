@@ -81,6 +81,10 @@ class MessengerController extends Controller
 
         $result->transform(function ($item) use ($request, $latestMessage) {
 
+            // dd($item->toArray());
+
+            $item->avatar =  User::where('id', $item->sender_id)->value('image') ?? null;
+
             if ($item->id === $latestMessage->id) {
                 $item->isSeen = $item->seen;
             }
